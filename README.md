@@ -4,7 +4,7 @@ from am_stl.stl.stl_parser import STLfile
 from am_stl.stl.stl_builder import STLCreator
 
 # Select an existing STL file
-stl_file = STLfile(r"C:\Users\julianm\Documents\projects\am-geoalt\models\geoalt_architecture.stl")
+stl_file = STLfile(r"3dp_model.stl")
 # Load it, which returns a collection of all faces in the STL-file
 face_collection = stl_file.load()
 
