@@ -3,9 +3,9 @@ from os.path import exists
 from os import remove
 
 class STLCreator:
-    '''
+    """
     Class for creating STL files out of a FaceCollection
-    '''
+    """
 
     def __init__(self, file_destination, face_collection, overwrite=True):
         # Ensure that all arguments are of the correct type
@@ -24,9 +24,9 @@ class STLCreator:
         self.overwrite = overwrite
 
     def build_file(self):
-        '''
+        """
         Build the STL file
-        '''
+        """
         if self.stream is not None:
             raise IOError("File stream was already opened")
 

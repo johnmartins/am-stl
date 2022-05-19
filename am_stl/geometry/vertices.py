@@ -6,10 +6,10 @@ class VertexCollection(set):
     enforce_strict_vertex_policy = True
 
     def add(self, vertex):
-        '''
+        """
         Add vertex to collection.
         O(1), constant time
-        '''
+        """
 
         if VertexCollection.enforce_strict_vertex_policy:
             contains_res = self.contains(vertex)    # Very slow
@@ -90,15 +90,15 @@ class Vertex:
         return h
 
     def get_array(self):
-        '''
+        """
         Returns the vertex as a coordinate vector in the form of a numpy array
-        '''
+        """
         return np.array(self.facecol.stlfile.vertices[self.index])
 
     def set_array(self, array):
-        '''
+        """
         Set the coordinate value of the vertex using a R^3 array
-        '''
+        """
         self.facecol.stlfile.vertices[self.index] = array
 
     def set_adjacency(self, vertex):
