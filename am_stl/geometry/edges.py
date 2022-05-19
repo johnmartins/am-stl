@@ -1,3 +1,7 @@
+from am_stl.exceptions import STL_LEAK_EXCEPTION
+from am_stl.geometry.vertices import Vertex
+
+
 class EdgeCollection(set):
     """
     Collection of Edge objects
@@ -62,4 +66,8 @@ class Edge:
         if face not in self.faces:
             self.faces.append(face)
         else:
-            print("The model is broken beyond repair.")
+            print("BLAH")
+            raise STL_LEAK_EXCEPTION('The model contains leaks, and is broken beyond repair. '
+                                     'Reduced vertex proximity tolerance may in some cases resolve the issue. '
+                                     f'Vertex.proximity_tolerance currently set to: {Vertex.proximity_tolerance}. '
+                                     'If you do not intend to utilize edges: load the STL with ignore_edges=true')

@@ -3,14 +3,18 @@ import numpy as np
 
 class VertexCollection(set):
 
+    enforce_strict_vertex_policy = True
+
     def add(self, vertex):
         '''
         Add vertex to collection.
         O(1), constant time
         '''
-        contains_res = self.contains(vertex)
-        if contains_res is not None:
-            return contains_res
+
+        if VertexCollection.enforce_strict_vertex_policy:
+            contains_res = self.contains(vertex)    # Very slow
+            if contains_res is not None:
+                return contains_res
 
         super().add(vertex)
 
@@ -21,6 +25,10 @@ class VertexCollection(set):
         Check if vertex exists in set
         O(n), linear time
         """
+
+        # TODO: Convert vertex collection to a map. The map should map from hash to object
+        # ma = vertex.__repr__() Use repr to assert same memory address
+
         if vertex in self:  # TODO: This is stupid. Fix.
             for v in self:
                 if v.__eq__(vertex):
@@ -31,11 +39,12 @@ class VertexCollection(set):
 
 
 class Vertex:
-    '''
+    """
     Class variables:\n
         eq_method: "exact" or "proximity". Exact is quick, but imprecise. Proximity is slow, but better.\n
-    '''
+    """
     eq_method = "proximity"
+    proximity_tolerance = 0.001
 
     def __init__(self, facecol, index):
         self.facecol = facecol
@@ -61,11 +70,11 @@ class Vertex:
     def __eq__(self, other):
         if Vertex.eq_method == "proximity":
             # Slow, but more certain
-            if abs(self.x() - other.x()) > 0.001:
+            if abs(self.x() - other.x()) > Vertex.proximity_tolerance:
                 return False
-            if abs(self.y() - other.y()) > 0.001:
+            if abs(self.y() - other.y()) > Vertex.proximity_tolerance:
                 return False
-            if abs(self.z() - other.z()) > 0.001:
+            if abs(self.z() - other.z()) > Vertex.proximity_tolerance:
                 return False
             return True
         elif Vertex.eq_method == "exact":

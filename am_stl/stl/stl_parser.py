@@ -4,7 +4,7 @@ import numpy as np
 from struct import unpack
 
 from am_stl.geometry.faces import Face, FaceCollection
-from am_stl.geometry.vertices import Vertex
+from am_stl.geometry.vertices import Vertex, VertexCollection
 
 
 class STLfile:
@@ -19,7 +19,9 @@ class STLfile:
         self._time_data = {
             'new_vertex': 0,
             'new_face': 0,
-            'end_facet': 0
+            'end_facet': 0,
+            'normal_vector_refresh': 0,
+            'append_face_to_collection': 0
         }
 
     def rotate(self, theta, axis):
@@ -82,19 +84,30 @@ class STLfile:
         face.vertices.append(Vertex(face.face_collection, vertex_index))
         self._time_data['new_vertex'] += timer() - t0
 
-    def __end_facet__(self, face: Face, facecol: FaceCollection):
+    def __end_facet__(self, face: Face, facecol: FaceCollection, ignore_edges: bool = False):
         """
         Create new face (facet)
         """
         t0 = timer()
         face.n_hat_original = face.refresh_normal_vector()
-        facecol.append(face)
+        t_normal_vector_refresh = timer()
+        facecol.append(face, ignore_edges=ignore_edges)
+        t_append_to_facecol = timer()
         self._time_data['end_facet'] += timer() - t0
+        self._time_data['normal_vector_refresh'] += t_normal_vector_refresh - t0
+        self._time_data['append_face_to_collection'] += t_append_to_facecol - t_normal_vector_refresh
 
-    def load(self, print_time_info=False) -> FaceCollection:
+    def load(self, print_time_info=False, strict_vertex_policy=True, ignore_edges=False) -> FaceCollection:
         """
         This generic load method is used to load any type of .stl-file. It will compensate automatically for ASCII,
-        binary or colored binary STLs.
+        binary or colored binary STLs. ASCII-files typically take a longer time to load than binary files.
+        :param print_time_info: Set to False by default. Print time info, for debugging.
+        :param strict_vertex_policy: Set to True by default.
+        Reduces leaks by ensuring that two vertices that are in proximity only count as one vertex.
+        Slows down the load time significantly.
+        :param ignore_edges: Set to False by default. Does not store edges, only vertices and faces.
+        Slows down the load time significantly.
+        :return:
         """
         f = open(self.filename, 'rb')
         type_str = f.read(5).decode('utf-8')
@@ -102,20 +115,30 @@ class STLfile:
 
         if "SOLID" in type_str.upper():
             try:
-                return self.load_ascii(print_time_info=print_time_info)
+                return self.load_ascii(print_time_info=print_time_info,
+                                       strict_vertex_policy=strict_vertex_policy,
+                                       ignore_edges=ignore_edges)
             except UnicodeDecodeError:
                 # If it fails to load as ascii, then it is probaby a binary file.
-                return self.load_binary(print_time_info=print_time_info)
+                return self.load_binary(print_time_info=print_time_info,
+                                        strict_vertex_policy=strict_vertex_policy,
+                                        ignore_edges=ignore_edges)
         elif "COLOR" in type_str.upper():
             print("COLOR LOAD")
-            return self.load_binary(color=True, print_time_info=print_time_info)
+            return self.load_binary(color=True, print_time_info=print_time_info,
+                                    strict_vertex_policy=strict_vertex_policy,
+                                    ignore_edges=ignore_edges)
 
-        return self.load_binary(print_time_info=print_time_info)
+        return self.load_binary(print_time_info=print_time_info,
+                                strict_vertex_policy=strict_vertex_policy,
+                                ignore_edges=ignore_edges)
 
-    def load_binary(self, color=False, print_time_info=False) -> FaceCollection:
+    def load_binary(self, color=False, print_time_info=False, strict_vertex_policy=True, ignore_edges=False) \
+            -> FaceCollection:
         """
         Load function specifically made for binary files.
         """
+        VertexCollection.enforce_strict_vertex_policy = strict_vertex_policy
         t_start = timer()
         facecol = FaceCollection(self)
         f = open(self.filename, 'rb')
@@ -145,7 +168,7 @@ class STLfile:
             v3 = unpack('<fff', f.read(12))
             self.__new_vertex__(face, [v3[0], v3[1], v3[2]])
 
-            self.__end_facet__(face, facecol)
+            self.__end_facet__(face, facecol, ignore_edges=ignore_edges)
 
             spacer = int.from_bytes(f.read(2), byteorder='little', signed=False)
 
@@ -164,10 +187,11 @@ class STLfile:
 
         return facecol
 
-    def load_ascii(self, print_time_info=False) -> FaceCollection:
+    def load_ascii(self, print_time_info=False, strict_vertex_policy=True, ignore_edges=False) -> FaceCollection:
         """
         Load function specifically made for ASCII files.
         """
+        VertexCollection.enforce_strict_vertex_policy = strict_vertex_policy
         t_start = timer()
         facecol = FaceCollection(self)
 
@@ -204,7 +228,7 @@ class STLfile:
                         [float(search.group(1)), float(search.group(2)), float(search.group(3))]))
                 elif fl == 7:
                     # End facet
-                    self.__end_facet__(current_face, facecol)
+                    self.__end_facet__(current_face, facecol, ignore_edges=ignore_edges)
                     current_face = None
                     fl = 0
                 else:
