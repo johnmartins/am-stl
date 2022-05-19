@@ -5,7 +5,6 @@ from struct import unpack
 
 from am_stl.geometry.faces import Face, FaceCollection
 from am_stl.geometry.vertices import Vertex
-from am_stl.stl.stl_builder import STLCreator
 
 
 class STLfile:
@@ -73,7 +72,7 @@ class STLfile:
         self.vertices.append(array)
         face.vertices.append(Vertex(face.face_collection, vertex_index))
 
-    def load(self):
+    def load(self) -> FaceCollection:
         '''
         This generic load method is used to load any type of .stl-file. It will compensate automatically for ASCII, binary or colored binary STLs.
         '''
@@ -93,7 +92,7 @@ class STLfile:
 
         return self.load_binary()
 
-    def load_binary(self, color=False):
+    def load_binary(self, color=False) -> FaceCollection:
         '''
         Load function specifically made for binary files.
         '''
@@ -133,7 +132,7 @@ class STLfile:
         self.calculate_ground_level()
         return facecol
 
-    def load_ascii(self):
+    def load_ascii(self) -> FaceCollection:
         '''
         Load function specifically made for ASCII files.
         '''
