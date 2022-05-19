@@ -58,15 +58,13 @@ class Edge:
         return False
 
     def __hash__(self):
-        # TODO: Optimize.
-        h = hash(self.vertex1.z() + self.vertex2.z())  # Z coordinates don't change.
+        h = hash(self.vertex1.z() + self.vertex2.z())
         return h
 
     def associate_with_face(self, face):
         if face not in self.faces:
             self.faces.append(face)
         else:
-            print("BLAH")
             raise STL_LEAK_EXCEPTION('The model contains leaks, and is broken beyond repair. '
                                      'Reduced vertex proximity tolerance may in some cases resolve the issue. '
                                      f'Vertex.proximity_tolerance currently set to: {Vertex.proximity_tolerance}. '

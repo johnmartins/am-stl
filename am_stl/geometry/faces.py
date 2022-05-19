@@ -4,7 +4,6 @@ import numpy as np
 
 from am_stl.geometry.vertices import VertexCollection
 from am_stl.geometry.edges import Edge, EdgeCollection
-from timeit import default_timer as timer
 
 
 class FaceCollection:
@@ -273,7 +272,7 @@ class Face:
         return [self.edge1, self.edge2, self.edge3]
 
     def __lt__(self, other):
-        if self.top_z > other.top_z:
+        if self.get_top_z() > other.get_top_z():
             return True
         else:
             return False

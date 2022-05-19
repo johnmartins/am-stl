@@ -56,7 +56,8 @@ class STLfile:
     def calculate_ground_level(self):
         """
         Fetches the lowest Z-element that can be found in the current orientation of the model.
-        Notice that the ground level changes if the model is rotated, but is automatically recalculated and can be fetched through the stl.ground_level variable.
+        Notice that the ground level changes if the model is rotated, but is automatically recalculated and can be
+        fetched through the stl.ground_level variable.
         """
         verts = np.array(self.vertices)
         self.ground_level = verts.min(axis=0)[2]
