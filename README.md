@@ -6,7 +6,7 @@ from am_stl.stl.stl_builder import STLCreator
 # Select an existing STL file
 stl_file = STLfile(r"3dp_model.stl")
 # Load it, which returns a collection of all faces in the STL-file
-face_collection = stl_file.load()
+face_collection = stl_file.load(print_time_info=True, strict_vertex_policy=False, ignore_edges=True)
 
 # Look for faces with overhang
 face_collection.check_for_problems(ignore_grounded=True)

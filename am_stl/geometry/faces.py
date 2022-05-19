@@ -1,3 +1,5 @@
+from typing import Tuple, List
+
 import numpy as np
 
 from am_stl.geometry.vertices import VertexCollection
@@ -6,9 +8,9 @@ from timeit import default_timer as timer
 
 
 class FaceCollection:
-    '''
+    """
     Collection of Face objects
-    '''
+    """
 
     def __init__(self, stlfile):
         self.stlfile = stlfile
@@ -23,9 +25,9 @@ class FaceCollection:
         self.total_weight = 0
 
     def append(self, face, ignore_edges=False):
-        '''
+        """
         Add face to face collection
-        '''
+        """
 
         if (isinstance(face, Face) is False):
             raise TypeError('face argument needs to be of type Face()')
@@ -52,15 +54,15 @@ class FaceCollection:
         return
 
     def __iter__(self):
-        '''
+        """
         Contributes to making this class iterable by providing an interface
-        '''
+        """
         return self
 
     def __next__(self):
-        '''
+        """
         Contributes to making this class iterable by providing a pointer.
-        '''
+        """
         if self.iterator_pointer > (len(self.faces) - 1):
             self.iterator_pointer = 0
             raise StopIteration
@@ -69,9 +71,9 @@ class FaceCollection:
             return self.faces[self.iterator_pointer - 1]
 
     def get_warning_count(self):
-        '''
+        """
         Returns the amount of potentially problematic faces
-        '''
+        """
         return len(self.problem_faces)
 
     def get_vertices(self, vtype="all"):
@@ -91,7 +93,17 @@ class FaceCollection:
         return self.vertex_collection
 
     def check_for_problems(self, phi_min=np.pi / 4, ignore_grounded=False, ground_level=0, ground_tolerance=0.01,
-                           angle_tolerance=0.017):
+                           angle_tolerance=0.017) -> Tuple[List, List]:
+        """
+        Sets FaceCollection attributes FaceCollection.problem_faces and FaceCollection.good_faces.
+        These attributes are lists, and are populated with the corresponding faces.
+        :param phi_min: Tolerated angle
+        :param ignore_grounded: Flat overhangs that are grounded are ignored.
+        :param ground_level: Manually set the ground (default is automatic ground detection)
+        :param ground_tolerance: Tolerance for what counts as grounded or not
+        :param angle_tolerance: Tolerance for acceptable overhang angles.
+        :return: List of problem faces, List of good faces.
+        """
         self.total_weight = 0
         self.good_faces = []
         self.problem_faces = []
@@ -105,18 +117,20 @@ class FaceCollection:
             else:
                 self.good_faces.append(f)
 
+        return self.problem_faces, self.good_faces
+
 
 class Face:
-    '''
+    """
     STL polygon face
-    '''
+    """
 
     def __init__(self, face_collection, normal_index, vertex_index):
-        '''
+        """
         vert1, vert2, vert3: vertices of a polygon\n
         n: normal vector\n
         phi_min: minimum angular difference between normal vector and -z_hat before marked as a problematic surface
-        '''
+        """
         self.face_collection = face_collection
         self.normal_index = None
         self.vertex_index = None
@@ -150,9 +164,9 @@ class Face:
         self.edge3.associate_with_face(self)
 
     def __connect_vertices__(self):
-        '''
+        """
         Connect all vertices to each other
-        '''
+        """
         self.vertices[0].set_adjacency(self.vertices[1])
         self.vertices[0].set_adjacency(self.vertices[2])
         self.vertices[1].set_adjacency(self.vertices[2])
@@ -170,7 +184,7 @@ class Face:
 
     def check_for_problems(self, phi_min=np.pi / 4, ignore_grounded=False, ground_level=0, ground_tolerance=0.01,
                            angle_tolerance=0.017, no_weight_update=True):
-        '''
+        """
         phi_min: Min angle before problem, in rads.\n
 
         ignore_grounded: Ignore surfaces close to the floor (prone to visual buggs in python)\n
@@ -181,7 +195,7 @@ class Face:
 
         angle_tolerance: How close to the phi_min an angle needs to be in order to be considered as acceptable.
         Setting this to 0 causes the problem correction process to take much more time.\n
-        '''
+        """
         # Check the angle of the normal factor, and compare it to that of the inverted z-unit vector
         neg_z_hat = [0, 0, -1]
         angle = np.arccos(np.clip(np.dot(self.n_hat, neg_z_hat), -1.0, 1.0))
@@ -265,9 +279,9 @@ class Face:
             return False
 
     def check_grounded(self, ground_level, ground_tolerance):
-        '''
+        """
         Check if this surface is parallel to the ground.
-        '''
+        """
         # Calculate differences between individual vertex Z-elements, and the ground level.
         diff_1 = np.abs(self.vertices[0].get_array()[2] - ground_level)
         diff_2 = np.abs(self.vertices[1].get_array()[2] - ground_level)

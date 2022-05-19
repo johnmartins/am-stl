@@ -1,12 +1,13 @@
 from am_stl.geometry.faces import FaceCollection
-
+from os.path import exists
+from os import remove
 
 class STLCreator:
-    '''
+    """
     Class for creating STL files out of a FaceCollection
-    '''
+    """
 
-    def __init__(self, file_destination, face_collection):
+    def __init__(self, file_destination, face_collection, overwrite=True):
         # Ensure that all arguments are of the correct type
         if isinstance(file_destination, str) is False:
             raise TypeError("Filename needs to be a String.")
@@ -14,14 +15,18 @@ class STLCreator:
         if isinstance(face_collection, FaceCollection) is False:
             raise TypeError("Face collection needs to be a FaceCollection.")
 
+        if exists(file_destination) and overwrite is False:
+            raise FileExistsError('File already exists, and overwrite is set to False.')
+
         self.file_destination = file_destination
         self.face_collection = face_collection
         self.stream = None
+        self.overwrite = overwrite
 
     def build_file(self):
-        '''
+        """
         Build the STL file
-        '''
+        """
         if self.stream is not None:
             raise IOError("File stream was already opened")
 
@@ -30,6 +35,9 @@ class STLCreator:
         self.__close_file__()
 
     def __create_file__(self):
+        if exists(self.file_destination) and self.overwrite is True:
+            remove(self.file_destination)
+
         try:
             self.stream = open(file=self.file_destination, mode="x", encoding="utf-8", newline=None)
             self.stream.write("solid GeoAlt\n")
