@@ -104,6 +104,8 @@ class FaceCollection:
         :param angle_tolerance: Tolerance for acceptable overhang angles.
         :return: List of problem faces, List of good faces.
         """
+        self.affected_area = 0
+        self.affected_area_projected = 0
         self.good_faces = []
         self.problem_faces = []
         for f in self.faces:
@@ -226,10 +228,11 @@ class Face:
             return_value = False
 
         # Calculate weight
-        self.calculate_affected_area(phi_min=phi_min, no_update=no_weight_update)
+        self.calculate_affected_area(phi_min=phi_min, no_update=no_weight_update, ignore_grounded=ignore_grounded)
+
         return return_value
 
-    def calculate_affected_area(self, phi_min=np.pi / 4, no_update=True):
+    def calculate_affected_area(self, phi_min=np.pi / 4, no_update=True, ignore_grounded=False):
 
         # Calculate face area
         cross_face = np.cross([self.vector1[0], self.vector1[1], self.vector1[2]],
@@ -240,7 +243,7 @@ class Face:
         cross_projection = np.cross([self.vector1[0], self.vector1[1], 0], [self.vector2[0], self.vector2[1], 0])
         area_projection = np.linalg.norm(cross_projection) / 2
 
-        if self.grounded:
+        if self.grounded and ignore_grounded is False:
             # Does not add to total tally of affected area
             return 0
 
