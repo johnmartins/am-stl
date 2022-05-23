@@ -62,6 +62,8 @@ class STLfile:
         verts = np.array(self.vertices)
         self.ground_level = verts.min(axis=0)[2]
 
+        return self.ground_level
+
     def __new_face__(self, facecol, n):
         """
         Create and store a new face.

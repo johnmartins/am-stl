@@ -21,7 +21,8 @@ class FaceCollection:
         self.edge_collection = EdgeCollection()
 
         self.iterator_pointer = 0
-        self.total_weight = 0
+        self.affected_area = 0                  # Total area of model that will interface with support structures
+        self.affected_area_projected = 0        # Total area of substrate that will interface with support structures
 
     def append(self, face, ignore_edges=False):
         """
@@ -98,12 +99,11 @@ class FaceCollection:
         These attributes are lists, and are populated with the corresponding faces.
         :param phi_min: Tolerated angle
         :param ignore_grounded: Flat overhangs that are grounded are ignored.
-        :param ground_level: Manually set the ground (default is automatic ground detection)
+        :param ground_level: Manually set the ground
         :param ground_tolerance: Tolerance for what counts as grounded or not
         :param angle_tolerance: Tolerance for acceptable overhang angles.
         :return: List of problem faces, List of good faces.
         """
-        self.total_weight = 0
         self.good_faces = []
         self.problem_faces = []
         for f in self.faces:
@@ -136,7 +136,8 @@ class Face:
 
         self.vertices = []
 
-        self.weight = 0
+        self.affected_area = 0
+        self.affected_area_projected = 0
 
         self.edge1 = None
         self.edge2 = None
@@ -225,42 +226,35 @@ class Face:
             return_value = False
 
         # Calculate weight
-        self.calculate_weight(phi_min=phi_min, no_update=no_weight_update)
+        self.calculate_affected_area(phi_min=phi_min, no_update=no_weight_update)
         return return_value
 
-    def calculate_weight(self, phi_min=np.pi / 4, no_update=True):
+    def calculate_affected_area(self, phi_min=np.pi / 4, no_update=True):
+
+        # Calculate face area
+        cross_face = np.cross([self.vector1[0], self.vector1[1], self.vector1[2]],
+                               [self.vector2[0], self.vector2[1], self.vector2[2]])
+        area_face = np.linalg.norm(cross_face) / 2
 
         # Calculate area of projection onto XY plane
-        cross = np.cross([self.vector1[0], self.vector1[1], 0], [self.vector2[0], self.vector2[1], 0])
-        area = np.linalg.norm(cross) / 2
+        cross_projection = np.cross([self.vector1[0], self.vector1[1], 0], [self.vector2[0], self.vector2[1], 0])
+        area_projection = np.linalg.norm(cross_projection) / 2
 
-        # Calculate constants:
-        m_heavy = 63.74
-        k_heavy = 42.96
+        if self.grounded:
+            # Does not add to total tally of affected area
+            return 0
 
-        m_light = 21.23
-        k_light = 14.3
-
-        weightPerArea = 0
-        if self.angle < 0.087:
-            # 5 degrees or less: Considered as flat overhang.
-            if self.grounded is False:
-                weightPerArea = 100
-            else:
-                weightPerArea = -80  # Discount for flat surfaces touching the ground. Easier to remove from substrate.
-                self.face_collection.stlfile.grounded = True  # Mark this orientation as grounded.
-        elif self.angle < phi_min:
-            weightPerArea = 63.74 - self.angle * 42.96  # Linear proportion. 1 deg overhang = 60 weight per area, 30 deg overhang = 30 weight per area
-        elif phi_min < self.angle and self.angle < (np.pi / 2 - 0.087):
-            weightPerArea = 21.23 - self.angle * 14.3  # Linear proportion. 45 deg overhang = 10 wpa, 89 deg overhang = 0 wpa
-
-        weight = weightPerArea * area
+        if self.has_bad_angle is False:
+            # Angle is problematic. Add to tally
+            return 0
 
         if no_update is False:
-            self.weight = weight
-            self.face_collection.total_weight += weight
+            self.affected_area = area_face
+            self.affected_area_projected = area_projection
+            self.face_collection.affected_area += area_face
+            self.face_collection.affected_area_projected += area_projection
 
-        return weight
+        return self.affected_area, self.affected_area_projected
 
     def get_vertices_as_arrays(self):
         return np.array([self.vertices[0].get_array(), self.vertices[1].get_array(), self.vertices[2].get_array()])
