@@ -1,7 +1,5 @@
 from am_stl.stl.stl_parser import STLfile
 from am_stl.stl.stl_builder import STLCreator
-from timeit import default_timer as timer
-import numpy as np
 import tempfile
 import uuid
 
@@ -9,28 +7,29 @@ import uuid
 def test_load_ascii():
     stl_file = STLfile(r"test/test_assets/ascii_test_model.stl")
     face_collection = stl_file.load(print_time_info=False, strict_vertex_policy=False, ignore_edges=True)
-    bad_faces, ok_faces = face_collection.check_for_problems(ignore_grounded=True)
 
-    assert len(bad_faces) == 580
-    assert len(ok_faces) == 1122
+    assert len(stl_file.vertices) == 5106
+    assert len(stl_file.normals) == 5106/3
+    assert len(face_collection.faces) == 5106/3
+    assert stl_file.header == "solid GeoAlt\n"
 
 
 def test_load_binary():
     stl_file = STLfile(r"test/test_assets/bin_test_model.stl")
     face_collection = stl_file.load(print_time_info=False, strict_vertex_policy=False, ignore_edges=True)
-    bad_faces, ok_faces = face_collection.check_for_problems(ignore_grounded=True)
 
-    assert len(bad_faces) == 664
-    assert len(ok_faces) == 6196
+    assert len(stl_file.vertices) == 20580
+    assert len(stl_file.normals) == 20580/3
+    assert len(face_collection.faces) == 20580/3
 
 
 def test_save_ascii():
     stl_file_1 = STLfile(r"test/test_assets/bin_test_model.stl")
     face_collection_1 = stl_file_1.load(print_time_info=False, strict_vertex_policy=False, ignore_edges=True)
-    bad_faces_1, ok_faces_1 = face_collection_1.check_for_problems(ignore_grounded=True)
 
-    bad_face_count = len(bad_faces_1)
-    ok_face_count = len(ok_faces_1)
+    vertices_count = len(stl_file_1.vertices)
+    normals_count = len(stl_file_1.normals)
+    faces_count = len(face_collection_1.faces)
 
     tmp_file_name = f'{tempfile.tempdir}/{uuid.uuid4()}.stl'
     stl_creator = STLCreator(tmp_file_name, face_collection_1)
@@ -38,7 +37,7 @@ def test_save_ascii():
 
     stl_file_2 = STLfile(tmp_file_name)
     face_collection_2 = stl_file_2.load(print_time_info=False, strict_vertex_policy=False, ignore_edges=True)
-    bad_faces_2, ok_faces_2 = face_collection_2.check_for_problems(ignore_grounded=True)
 
-    assert bad_face_count == len(bad_faces_2)
-    assert ok_face_count == len(ok_faces_2)
+    assert len(stl_file_2.vertices) == vertices_count
+    assert len(stl_file_2.normals) == normals_count
+    assert len(face_collection_2.faces) == faces_count
