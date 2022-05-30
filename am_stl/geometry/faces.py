@@ -29,7 +29,7 @@ class FaceCollection:
         Add face to face collection
         """
 
-        if (isinstance(face, Face) is False):
+        if isinstance(face, Face) is False:
             raise TypeError('face argument needs to be of type Face()')
         if face.has_bad_angle is True:
             self.problem_faces.append(face)
