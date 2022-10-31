@@ -21,8 +21,9 @@ class FaceCollection:
         self.edge_collection = EdgeCollection()
 
         self.iterator_pointer = 0
-        self.affected_area = 0                  # Total area of model that will interface with support structures
-        self.affected_area_projected = 0        # Total area of substrate that will interface with support structures
+        self.affected_area = 0  # Total area of model that will interface with support structures
+        self.affected_area_projected = 0  # Total area of substrate that will interface with support structures
+        self.support_volume = 0     # Rough approximation of support volume
 
     def append(self, face, ignore_edges=False):
         """
@@ -140,6 +141,7 @@ class Face:
 
         self.affected_area = 0
         self.affected_area_projected = 0
+        self.support_volume = 0
 
         self.edge1 = None
         self.edge2 = None
@@ -228,15 +230,15 @@ class Face:
             return_value = False
 
         # Calculate weight
-        self.calculate_affected_area(phi_min=phi_min, no_update=no_weight_update, ignore_grounded=ignore_grounded)
+        self.calculate_affected_area(phi_min=phi_min, no_update=no_weight_update, ignore_grounded=ignore_grounded, ground_level=ground_level)
 
         return return_value
 
-    def calculate_affected_area(self, phi_min=np.pi / 4, no_update=True, ignore_grounded=False):
+    def calculate_affected_area(self, phi_min=np.pi / 4, no_update=True, ignore_grounded=False, ground_level=0):
 
         # Calculate face area
         cross_face = np.cross([self.vector1[0], self.vector1[1], self.vector1[2]],
-                               [self.vector2[0], self.vector2[1], self.vector2[2]])
+                              [self.vector2[0], self.vector2[1], self.vector2[2]])
         area_face = np.linalg.norm(cross_face) / 2
 
         # Calculate area of projection onto XY plane
@@ -244,20 +246,37 @@ class Face:
         area_projection = np.linalg.norm(cross_projection) / 2
 
         if self.grounded and ignore_grounded is False:
-            # Does not add to total tally of affected area
+            # Does not add to total tally of affected area since the face is planted on the ground
             return 0
 
         if self.has_bad_angle is False:
-            # Angle is problematic. Add to tally
+            # Face does not require support. Do not add to tally.
             return 0
 
         if no_update is False:
+            # Face is not planted on the ground, and requires support.
             self.affected_area = area_face
             self.affected_area_projected = area_projection
+            self.support_volume = self.get_support_volume(area_projection, ground_level)
             self.face_collection.affected_area += area_face
             self.face_collection.affected_area_projected += area_projection
+            self.face_collection.support_volume += self.support_volume
 
-        return self.affected_area, self.affected_area_projected
+        return self.affected_area, self.affected_area_projected, self.support_volume
+
+    def get_support_volume(self, area_projection, ground_level):
+        """
+        Volume calculation: Each triangular surface is regarded as a "truncated triangular prism", which
+        has the volume V = A * (z1 + z2 + z3)/3, where A is the base area (projected area onto XY-plane), and z are
+        the height coordinates.
+        :param area_projection: Projection of polygon onto the XY-plane.
+        :param ground_level: The ground level.
+        :return:
+        """
+        z1 = self.vertices[0].z() - ground_level
+        z2 = self.vertices[1].z() - ground_level
+        z3 = self.vertices[2].z() - ground_level
+        return area_projection * (z1 + z2 + z3) / 3
 
     def get_vertices_as_arrays(self):
         return np.array([self.vertices[0].get_array(), self.vertices[1].get_array(), self.vertices[2].get_array()])
